@@ -1,0 +1,9 @@
+.venv/
+# Python cache
+__pycache__/
+*.pyc
+
+.env
+.env.*
+!.env.example
+chroma_db/
