@@ -1,65 +1,56 @@
 from pydantic import BaseModel, Field, field_validator
 
 class SearchRequest(BaseModel):
-    query : str = Field (
+    """Request body for fact-table search."""
+
+    query: str = Field(
         ...,
-        description= "Natural language search query",
-        examples = ["Population of France", "Area of Germany"],
         min_length=1,
-        max_length=500
+        max_length=500,
+        description="Text used to search the supplied fact table.",
+        examples=["area of Germany"],
     )
 
     @field_validator("query")
     @classmethod
-    def validate_query(cls, v:str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("Query must not be empty or only whitespaces")
-        return v
+    def strip_and_validate_query(cls, value: str) -> str:
+        cleaned = value.strip()
+
+        if not cleaned:
+            raise ValueError("Query cannot be empty or whitespace only.")
+
+        return cleaned
+
 
 class SearchResult(BaseModel):
-    id : int = Field (
-        description ="Identifier of the fact in table",
-        examples=[1]
-    )
+    """One fact returned by mock search."""
 
-    keywords : list[str] = Field (
-        description="Keywords associated with facts",
-        examples=[["population", "france"]]
+    id: str = Field(
+        ...,
+        description="Stable identifier for the supplied fact.",
+        examples=["germany-area"],
     )
-
-    snippet : str = Field (
-        description="Short text snippet describing the fact",
-        examples=["Germany has a total area of 357,022 square kilometres."]
+    keywords: list[str] = Field(
+        ...,
+        description="Keywords associated with the fact.",
+        examples=[["germany", "area"]],
     )
-
-    source : str = Field (
-        description="Source URI for the fact",
-        examples=["mock://worldfacts/germany"]
+    snippet: str = Field(
+        ...,
+        description="Fact text returned to the caller.",
+        examples=["Germany has an area of approximately 357,022 square kilometres."],
+    )
+    source: str = Field(
+        ...,
+        description="Source associated with the fact.",
+        examples=["World Fact Table"],
     )
 
 class SearchResponse(BaseModel):
-    results: list[SearchResult] = Field (
-        description="List of matching facts from the seed table, capped at 5 entries.",
-        examples=[
-            [
-                {"id":4, 
-                  "keywords":"area, germany", 
-                  "snippet":"Germany has a total area of 357,022 square kilometres.", 
-                  "source":"mock://worldfacts/germany"
-                }
-            ]
-        ],
-)
+    """Successful mock-search response."""
 
-
-
-
-
-
-
-
-
-
-
-
+    results: list[SearchResult] = Field(
+        default_factory=list,
+        description="Highest-scoring matching facts, capped at five results.",
+        examples=[[]],
+    )

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class CalculateRequest(BaseModel):
@@ -8,9 +8,21 @@ class CalculateRequest(BaseModel):
         ...,
         min_length=1,
         max_length=200,
-        description="A basic arithmetic expression using +, -, *, /, and parentheses.",
+        description="Basic arithmetic expression using numbers, +, -, *, /, and parentheses.",
         examples=["(12 + 8) * 3"],
     )
+
+    @field_validator("expression")
+    @classmethod
+    def strip_and_validate_expression(cls, value: str) -> str:
+        """Strip outer whitespace and reject an empty result."""
+
+        cleaned = value.strip()
+
+        if not cleaned:
+            raise ValueError("Expression cannot be empty or whitespace only.")
+
+        return cleaned
 
 
 class CalculateResponse(BaseModel):
@@ -18,11 +30,11 @@ class CalculateResponse(BaseModel):
 
     expression: str = Field(
         ...,
-        description="The arithmetic expression that was calculated.",
+        description="The validated arithmetic expression that was calculated.",
         examples=["(12 + 8) * 3"],
     )
     result: int | float = Field(
         ...,
-        description="The calculated numeric result.",
+        description="The numeric result of the expression.",
         examples=[60],
     )
