@@ -1,6 +1,6 @@
-# Progress
+## Progress
 
-## 2026-09-08
+# 2026-09-08
 
 - Set up the Python project with `uv`, a local `.venv`, pinned dependencies, and `uv.lock`.
 - Added `.gitignore` and created the initial project/package structure.
@@ -12,3 +12,15 @@
 - Implemented initial search-tool logic that reads and matches the supplied `data/search-facts.md` table.
 - Added the initial `POST /tools/search` FastAPI route.
 - Started testing through FastAPI Swagger UI (`/docs`), but it currently shows “Failed to load API definition”; diagnosis is pending.
+
+# 2026-09-09
+
+- Fixed Swagger so `/docs` loads and shows all tool routes.
+- Finished the mock search tool and confirmed `/tools/search` returns the expected facts.
+- Implemented corpus retrieval with ChromaDB and added `/tools/retrieve`.
+- Wired up the calculator tool and verified division-by-zero returns a clean error (no 500).
+- Built the ReAct agent:
+  - Registered `search`, `retrieve`, and `calculate` as tools.
+  - Added `POST /agent/query` and confirmed it works for both world-fact and Tideline questions.
+- Wrote `stage2-trace.md` and updated `DECISIONS.md` with Stage 2 choices.
+- Started a minimal eval harness script to run a few of the provided questions against the agent.
