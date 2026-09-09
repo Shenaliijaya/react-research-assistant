@@ -40,7 +40,7 @@ class SearchResult(BaseModel):
 
 class SearchResponse(BaseModel):
     results: list[SearchResult] = Field (
-        description=["List of matching facts from the seed table, capped at 5 entries."],
+        description="List of matching facts from the seed table, capped at 5 entries.",
         examples=[
             [
                 {"id":4, 
