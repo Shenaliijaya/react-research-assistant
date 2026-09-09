@@ -1,0 +1,186 @@
+from dataclasses import dataclass
+from pathlib import Path
+
+import chromadb
+
+
+CORPUS_PATH = Path("corpus")
+CHROMA_PATH = Path("chroma_db")
+COLLECTION_NAME = "research_corpus"
+CHUNK_SIZE = 800
+CHUNK_OVERLAP = 100
+DEFAULT_RESULT_COUNT = 3
+
+_collection = None
+
+
+@dataclass
+class RetrievedChunk:
+    """One chunk returned from the local ChromaDB collection."""
+
+    chunk_id: str
+    source: str
+    chunk_index: int
+    text: str
+    distance: float
+
+
+def _load_corpus_documents(corpus_path: Path) -> list[tuple[str, str]]:
+    """Load non-empty Markdown documents from the corpus directory."""
+
+    if not corpus_path.exists():
+        raise ValueError(f"Corpus directory does not exist: {corpus_path}")
+
+    documents: list[tuple[str, str]] = []
+
+    for file_path in sorted(corpus_path.glob("*.md")):
+        text = file_path.read_text(encoding="utf-8").strip()
+
+        if text:
+            documents.append((file_path.name, text))
+
+    if not documents:
+        raise ValueError("No non-empty Markdown documents were found.")
+
+    return documents
+
+
+def _split_text(text: str) -> list[str]:
+    """Split text into overlapping chunks without starting inside a word."""
+
+    if CHUNK_OVERLAP >= CHUNK_SIZE:
+        raise ValueError("CHUNK_OVERLAP must be smaller than CHUNK_SIZE.")
+
+    text = text.strip()
+
+    if not text:
+        return []
+
+    chunks: list[str] = []
+    start = 0
+
+    while start < len(text):
+        end = min(start + CHUNK_SIZE, len(text))
+
+        if end < len(text):
+            boundary = text.rfind(" ", start, end)
+
+            if boundary > start:
+                end = boundary
+
+        chunk = text[start:end].strip()
+
+        if chunk:
+            chunks.append(chunk)
+
+        if end >= len(text):
+            break
+
+        next_start = max(end - CHUNK_OVERLAP, start + 1)
+
+        while next_start < len(text) and not text[next_start].isspace():
+            next_start += 1
+
+        start = next_start
+
+
+    return chunks
+
+
+def create_or_load_collection(
+    corpus_path: Path = CORPUS_PATH,
+    chroma_path: Path = CHROMA_PATH,
+):
+    """Create/load the local collection and idempotently seed corpus chunks."""
+
+    client = chromadb.PersistentClient(path=str(chroma_path))
+    collection = client.get_or_create_collection(name=COLLECTION_NAME)
+
+    ids: list[str] = []
+    documents: list[str] = []
+    metadatas: list[dict[str, str | int]] = []
+
+    for filename, text in _load_corpus_documents(corpus_path):
+        file_stem = Path(filename).stem
+
+        for chunk_index, chunk in enumerate(_split_text(text)):
+            ids.append(f"{file_stem}-chunk-{chunk_index}")
+            documents.append(chunk)
+            metadatas.append(
+                {
+                    "source": filename,
+                    "chunk_index": chunk_index,
+                }
+            )
+
+    collection.upsert(
+        ids=ids,
+        documents=documents,
+        metadatas=metadatas,
+    )
+
+    return collection
+
+
+def initialize_retrieval() -> None:
+    """Seed ChromaDB once during FastAPI application startup."""
+
+    global _collection
+    _collection = create_or_load_collection()
+
+
+def retrieve(
+    query: str,
+    result_count: int = DEFAULT_RESULT_COUNT,
+) -> tuple[list[RetrievedChunk], int]:
+    """Return similar chunks and the total number of stored chunks."""
+
+    query = query.strip()
+
+    if not query:
+        raise ValueError("Query cannot be empty.")
+
+    if result_count < 1:
+        raise ValueError("Result count must be at least 1.")
+
+    if _collection is None:
+        raise RuntimeError("Retrieval collection has not been initialized.")
+
+    total_chunks = _collection.count()
+
+    if total_chunks == 0:
+        return [], 0
+
+    n_results = min(result_count, total_chunks)
+
+    response = _collection.query(
+        query_texts=[query],
+        n_results=n_results,
+        include=["documents", "metadatas", "distances"],
+    )
+
+    chunk_ids = response["ids"][0]
+    documents = response["documents"][0]
+    metadatas = response["metadatas"][0]
+    distances = response["distances"][0]
+
+    results: list[RetrievedChunk] = []
+
+    for chunk_id, document, metadata, distance in zip(
+        chunk_ids,
+        documents,
+        metadatas,
+        distances,
+        strict=True,
+    ):
+        results.append(
+            RetrievedChunk(
+                chunk_id=chunk_id,
+                source=str(metadata["source"]),
+                chunk_index=int(metadata["chunk_index"]),
+                text=document,
+                distance=float(distance),
+            )
+        )
+
+    return results, total_chunks
