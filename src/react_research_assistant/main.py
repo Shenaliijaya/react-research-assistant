@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from react_research_assistant.api.tools import router as tools_router
+from react_research_assistant.api.calculator import router as calculator_router 
 
 
 def create_app() -> FastAPI:
@@ -16,7 +17,12 @@ def create_app() -> FastAPI:
         tags=["Tools"],
     )
 
-    return app
+    app.include_router(
+    calculator_router,
+    prefix="/tools",
+    tags=["Tools"]
+    )
 
+    return app
 
 app = create_app()

@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from difflib import get_close_matches
 
 from react_research_assistant.models.search import SearchResult
 
@@ -75,28 +76,49 @@ def _normalize_text(text: str) -> list[str]:
     cleaned = re.sub(r"[^\w\s]", " ", text.lower())
     return [word for word in cleaned.split() if word]
 
+def _correct_query_words(
+    query_words: set[str],
+    facts: list[Fact],
+) -> set[str]:
+    """Correct close misspellings using known fact keywords."""
+
+    known_keywords = {
+        keyword
+        for fact in facts
+        for keyword in fact.keywords
+    }
+
+    corrected_words: set[str] = set()
+
+    for word in query_words:
+        if word in known_keywords:
+            corrected_words.add(word)
+            continue
+
+        close_matches = get_close_matches(
+            word,
+            known_keywords,
+            n=1,
+            cutoff=0.8,
+        )
+
+        corrected_words.add(close_matches[0] if close_matches else word)
+
+    return corrected_words
+
 
 def search_facts(
     query: str,
     facts_path: Path = FACTS_PATH,
     max_results: int = MAX_RESULTS,
 ) -> list[SearchResult]:
-    """Search mock world facts using the highest keyword-overlap score.
-
-    A fact must share at least one keyword with the query. Only facts tied
-    for the best score are returned, up to max_results.
-
-    Examples:
-    - "population" returns France, Germany, and Japan population facts.
-    - "area of Germany" returns only Germany area because it matches both
-      "area" and "germany", while France and Japan area rows match only "area".
-    """
 
     if not query:
         return []
 
     query_words = set(_normalize_text(query))
     facts = load_facts(facts_path)
+    query_words = _correct_query_words(query_words, facts)
     matches: list[tuple[int, Fact]] = []
 
     for fact in facts:
