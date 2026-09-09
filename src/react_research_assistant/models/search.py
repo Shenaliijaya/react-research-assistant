@@ -25,10 +25,10 @@ class SearchRequest(BaseModel):
 class SearchResult(BaseModel):
     """One fact returned by mock search."""
 
-    id: str = Field(
+    id: int = Field(
         ...,
         description="Stable identifier for the supplied fact.",
-        examples=["germany-area"],
+        examples=[1],
     )
     keywords: list[str] = Field(
         ...,
@@ -43,7 +43,7 @@ class SearchResult(BaseModel):
     source: str = Field(
         ...,
         description="Source associated with the fact.",
-        examples=["World Fact Table"],
+        examples=["mock://worldfacts/france"],
     )
 
 class SearchResponse(BaseModel):

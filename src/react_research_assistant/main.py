@@ -1,10 +1,13 @@
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 
+load_dotenv()
 from fastapi import FastAPI
 
 from react_research_assistant.api.calculator import router as calculator_router
 from react_research_assistant.api.retrieval import router as retrieval_router
 from react_research_assistant.api.tools import router as tools_router
+from react_research_assistant.api.agent import router as agent_router
 from react_research_assistant.services.retrieval import initialize_retrieval
 
 
@@ -41,6 +44,11 @@ def create_app() -> FastAPI:
         prefix="/tools",
         tags=["Tools"],
     )
+    app.include_router(
+            agent_router,
+            prefix="/agent",
+            tags=["agent"],
+        )
 
     return app
 

@@ -1,113 +1,63 @@
-from typing import Literal
+from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 
 
-class AgentRequest(BaseModel):
-    """Request contract for the future ReAct agent endpoint."""
+class StopReason(str, Enum):
+    final_answer = "final_answer"
+    iteration_limit = "iteration_limit"
+    timeout = "timeout"
+    parse_error = "parse_error"
+    tool_error = "tool_error"
 
+
+class AgentRequest(BaseModel):
     query: str = Field(
         ...,
+        description="The question to ask the research assistant agent.",
+        examples=["What is the population of France divided by the area of Germany?"],
         min_length=1,
-        max_length=500,
-        description="Question or task for the research assistant.",
-        examples=["What is the retention period for new Team projects?"],
+        max_length=1000,
     )
-    session_id: str | None = Field(
+    session_id: Optional[str] = Field(
         default=None,
-        max_length=100,
-        description="Optional identifier used to associate related agent requests.",
-        examples=["demo-session-001"],
+        description="Optional session identifier to group related queries.",
+        examples=["session-abc123"],
     )
     max_iterations: int = Field(
         default=10,
         ge=1,
         le=25,
-        description="Maximum number of reasoning and tool-use iterations allowed.",
+        description="Maximum number of ReAct loop iterations before giving up.",
         examples=[10],
     )
-    include_trace: bool = Field(
-        default=False,
-        description="Whether the response should include the agent reasoning and tool trace.",
-        examples=[False],
+    return_trace: bool = Field(
+        default=True,
+        description="Whether to include the full step-by-step trace in the response.",
+        examples=[True],
     )
 
     @field_validator("query")
     @classmethod
-    def strip_and_validate_query(cls, value: str) -> str:
-        """Strip outer whitespace and reject an empty result."""
-
-        cleaned = value.strip()
-
-        if not cleaned:
-            raise ValueError("Query cannot be empty or whitespace only.")
-
-        return cleaned
+    def validate_query(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Query must not be empty or whitespace only.")
+        return v
 
 
 class ThoughtStep(BaseModel):
-    """One observable ReAct loop iteration."""
-
-    step_number: int = Field(
-        ...,
-        ge=1,
-        description="One-based position of this step in the agent loop.",
-        examples=[1],
-    )
-    thought: str = Field(
-        ...,
-        description="The agent's reasoning for the next action.",
-        examples=["I need the retention policy, so I should retrieve relevant documents."],
-    )
-    tool_name: str | None = Field(
-        default=None,
-        description="Name of the tool selected for this step, if a tool was used.",
-        examples=["retrieve"],
-    )
-    tool_input: str | None = Field(
-        default=None,
-        description="Input given to the selected tool, if a tool was used.",
-        examples=["default retention for new Team projects"],
-    )
-    observation: str | None = Field(
-        default=None,
-        description="Result observed after calling the tool, if a tool was used.",
-        examples=["The default advertised retention for new Team projects is 90 days."],
-    )
+    step_number: int = Field(..., description="Index of this loop iteration, starting at 1.", examples=[1])
+    thought: str = Field(..., description="The model's reasoning text for this step.", examples=["I need to search for the population of France."])
+    tool: Optional[str] = Field(default=None, description="The tool name chosen for this step, if any.", examples=["search"])
+    tool_input: Optional[str] = Field(default=None, description="The input passed to the tool.", examples=["population of France"])
+    observation: Optional[str] = Field(default=None, description="The result returned by the tool.", examples=["The population of France is approximately 68,170,000."])
 
 
 class AgentResponse(BaseModel):
-    """Response contract for the future ReAct agent endpoint."""
-
-    final_answer: str = Field(
-        ...,
-        description="The final answer produced by the agent.",
-        examples=["New Team projects have a default advertised retention period of 90 days."],
-    )
-    trace: list[ThoughtStep] = Field(
-        default_factory=list,
-        description="Reasoning and tool-use steps, included when requested.",
-        examples=[[]],
-    )
-    iteration_count: int = Field(
-        ...,
-        ge=0,
-        description="Number of reasoning iterations completed before the loop ended.",
-        examples=[2],
-    )
-    latency_ms: float = Field(
-        ...,
-        ge=0,
-        description="End-to-end request processing time in milliseconds.",
-        examples=[245.6],
-    )
-    end_reason: Literal[
-        "final_answer",
-        "iteration_limit",
-        "parser_error",
-        "tool_error",
-    ] = Field(
-        ...,
-        description="Machine-readable reason the agent loop ended.",
-        examples=["final_answer"],
-    )
+    final_answer: str = Field(..., description="The agent's final answer to the query.", examples=["Approximately 191 people per square kilometre."])
+    trace: list[ThoughtStep] = Field(default_factory=list, description="Step-by-step reasoning trace, if requested.")
+    iterations: int = Field(..., description="Number of loop iterations actually taken.", examples=[3])
+    latency_ms: float = Field(..., description="End-to-end latency in milliseconds.", examples=[1523.4])
+    stop_reason: StopReason = Field(..., description="Machine-readable reason the loop ended.", examples=["final_answer"])
