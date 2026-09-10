@@ -18,6 +18,15 @@ class RetrieveRequest(BaseModel):
         description="Maximum number of relevant chunks to return.",
         examples=[3],
     )
+    source_filename: str | None = Field(
+        default=None,
+        max_length=255,
+        description=(
+            "Optional exact source filename. When supplied, retrieval searches only "
+            "chunks ingested from that file."
+        ),
+        examples=["02-rfc-014-retention-and-downsampling.md"],
+    )
 
     @field_validator("query")
     @classmethod
@@ -28,6 +37,21 @@ class RetrieveRequest(BaseModel):
 
         if not cleaned:
             raise ValueError("Query cannot be empty or whitespace only.")
+
+        return cleaned
+
+    @field_validator("source_filename")
+    @classmethod
+    def strip_and_validate_source_filename(cls, value: str | None) -> str | None:
+        """Normalize an optional source filter and reject whitespace-only values."""
+
+        if value is None:
+            return None
+
+        cleaned = value.strip()
+
+        if not cleaned:
+            raise ValueError("Source filename cannot be empty or whitespace only.")
 
         return cleaned
 
@@ -72,11 +96,17 @@ class RetrieveResponse(BaseModel):
     )
     total_chunks: int = Field(
         ...,
-        description="Total number of chunks stored in the corpus collection.",
+        description=(
+            "Total chunks in the selected source when source_filename is supplied; "
+            "otherwise total chunks in the whole collection."
+        ),
         examples=[52],
     )
     truncated: bool = Field(
         ...,
-        description="Whether the requested result limit may have omitted additional corpus chunks.",
+        description=(
+            "Whether the requested result limit may have omitted additional chunks "
+            "from the selected source or collection."
+        ),
         examples=[True],
     )

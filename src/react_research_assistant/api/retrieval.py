@@ -23,6 +23,7 @@ def retrieve_chunks(request: RetrieveRequest) -> RetrieveResponse:
         chunks, total_chunks = retrieve(
             query=request.query,
             result_count=request.result_count,
+            source_filename=request.source_filename,
         )
     except ValueError as error:
         raise HTTPException(

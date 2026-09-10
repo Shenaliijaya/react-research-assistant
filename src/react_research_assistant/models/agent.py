@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Optional
 
@@ -61,3 +62,38 @@ class AgentResponse(BaseModel):
     iterations: int = Field(..., description="Number of loop iterations actually taken.", examples=[3])
     latency_ms: float = Field(..., description="End-to-end latency in milliseconds.", examples=[1523.4])
     stop_reason: StopReason = Field(..., description="Machine-readable reason the loop ended.", examples=["final_answer"])
+
+
+
+class ConversationTurnResponse(BaseModel):
+    """One completed conversation turn returned by the history endpoint."""
+
+    query: str = Field(
+        ...,
+        description="The user's original query for this turn.",
+        examples=["What is the default retention for Team projects?"],
+    )
+    answer: str = Field(
+        ...,
+        description="The final answer returned by the agent for this turn.",
+        examples=["The pricing FAQ says the advertised default is 90 days."],
+    )
+    timestamp: datetime = Field(
+        ...,
+        description="UTC timestamp recorded after the agent completed the turn.",
+        examples=["2026-09-10T08:30:00+00:00"],
+    )
+
+
+class AgentHistoryResponse(BaseModel):
+    """Conversation history for one known session."""
+
+    session_id: str = Field(
+        ...,
+        description="Session identifier whose stored turns are returned.",
+        examples=["session-abc123"],
+    )
+    turns: list[ConversationTurnResponse] = Field(
+        default_factory=list,
+        description="Completed turns ordered from oldest to newest.",
+    )

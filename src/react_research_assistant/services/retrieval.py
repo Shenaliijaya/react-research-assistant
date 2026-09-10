@@ -136,8 +136,9 @@ def initialize_retrieval() -> None:
 def retrieve(
     query: str,
     result_count: int = DEFAULT_RESULT_COUNT,
+    source_filename: str | None = None,
 ) -> tuple[list[RetrievedChunk], int]:
-    """Return similar chunks and the total number of stored chunks."""
+    """Return similar chunks, optionally restricted to one source document."""
 
     query = query.strip()
 
@@ -147,21 +148,36 @@ def retrieve(
     if result_count < 1:
         raise ValueError("Result count must be at least 1.")
 
+    if source_filename is not None:
+        source_filename = source_filename.strip()
+
+        if not source_filename:
+            raise ValueError("Source filename cannot be empty.")
+
     if _collection is None:
         raise RuntimeError("Retrieval collection has not been initialized.")
 
-    total_chunks = _collection.count()
+    where = {"source": source_filename} if source_filename else None
+
+    total_chunks = _collection.count() if where is None else len(
+        _collection.get(where=where, include=[])["ids"]
+    )
 
     if total_chunks == 0:
         return [], 0
 
     n_results = min(result_count, total_chunks)
 
-    response = _collection.query(
-        query_texts=[query],
-        n_results=n_results,
-        include=["documents", "metadatas", "distances"],
-    )
+    query_arguments = {
+        "query_texts": [query],
+        "n_results": n_results,
+        "include": ["documents", "metadatas", "distances"],
+    }
+
+    if where is not None:
+        query_arguments["where"] = where
+
+    response = _collection.query(**query_arguments)
 
     chunk_ids = response["ids"][0]
     documents = response["documents"][0]
