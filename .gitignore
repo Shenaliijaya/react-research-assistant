@@ -7,3 +7,6 @@ __pycache__/
 .env.*
 !.env.example
 chroma_db/
+
+check.txt
+empty.md

@@ -61,3 +61,17 @@
 - Chosen: Use `max_execution_time=timeout_seconds` on `AgentExecutor`, with a default of 60 seconds.
 - Reason: I don’t want a single bad or adversarial query to tie up the agent forever. A 60-second cap is a reasonable default for this kind of research assistant; it’s long enough for a few tool calls and some thinking, but short enough to protect the service.
 - Change trigger: If I see legitimate queries hitting the timeout regularly, I’ll consider raising the limit or making it configurable per endpoint, but the agent will always run under some upper bound.
+
+## Stage 3 — Ingestion duplicate policy
+
+**Decision:** Overwrite documents by exact uploaded source filename.
+
+**Why:** A correction uploaded under the same filename should replace old chunks. The service queries ChromaDB for chunks whose `source` metadata matches the filename, deletes those chunks, then inserts fresh chunks. This avoids stale and duplicate retrieval results while preserving a simple API contract.
+
+**Rejected alternative:** Version every upload. Versioning would preserve historical copies, but it would require a version identifier and a policy for which version retrieval should search. That is unnecessary for the assignment’s supplied corpus and would make filtered retrieval more ambiguous.
+
+**Evidence:** The four supplied corpus documents produced 54 chunks across four documents through `POST /ingest`. Uploading `check.txt` added one chunk. Uploading the same file again returned `replaced_existing: true` and kept the collection at 55 chunks and five documents.
+
+**Invalid-input behavior:** A non-supported extension returned HTTP 415. An empty Markdown upload returned HTTP 422 and a subsequent retrieval still reported 55 chunks, showing that invalid files do not modify the collection.
+
+**What would change this decision:** I would choose versioning if historical retrieval, audit requirements, concurrent editors, or rollback of document changes became a product requirement.
