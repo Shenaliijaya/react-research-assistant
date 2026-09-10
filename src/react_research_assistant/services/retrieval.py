@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from datetime import UTC, datetime
+import re
 from pathlib import Path
 
 import chromadb
@@ -123,10 +125,12 @@ def create_or_load_collection(
 
 
 def initialize_retrieval() -> None:
-    """Seed ChromaDB once during FastAPI application startup."""
+    """Create or load the local ChromaDB collection at application startup."""
 
     global _collection
-    _collection = create_or_load_collection()
+
+    client = chromadb.PersistentClient(path=str(CHROMA_PATH))
+    _collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
 
 def retrieve(
@@ -184,3 +188,80 @@ def retrieve(
         )
 
     return results, total_chunks
+
+
+def ingest_document(
+    filename: str,
+    text: str,
+) -> tuple[str, int, int, int, bool]:
+    """Chunk and store one document, replacing an existing matching source."""
+
+    if _collection is None:
+        raise RuntimeError("Retrieval collection has not been initialized.")
+
+    filename = Path(filename).name.strip()
+    text = text.strip()
+
+    if not filename:
+        raise ValueError("Filename cannot be empty.")
+
+    if not text:
+        raise ValueError("Document content cannot be empty.")
+
+    document_id = re.sub(r"[^a-z0-9]+", "-", Path(filename).stem.lower()).strip("-")
+
+    if not document_id:
+        raise ValueError("Filename must contain at least one letter or number.")
+
+    existing = _collection.get(
+        where={"source": filename},
+        include=[],
+    )
+    existing_ids = existing["ids"]
+    replaced_existing = len(existing_ids) > 0
+
+    if existing_ids:
+        _collection.delete(ids=existing_ids)
+
+    ingested_at = datetime.now(UTC).isoformat()
+    chunks = _split_text(text)
+
+    if not chunks:
+        raise ValueError("Document content did not produce any chunks.")
+
+    chunk_ids = [
+        f"{document_id}-chunk-{chunk_index}"
+        for chunk_index in range(len(chunks))
+    ]
+    metadatas = [
+        {
+            "source": filename,
+            "document_id": document_id,
+            "chunk_index": chunk_index,
+            "ingested_at": ingested_at,
+        }
+        for chunk_index in range(len(chunks))
+    ]
+
+    _collection.upsert(
+        ids=chunk_ids,
+        documents=chunks,
+        metadatas=metadatas,
+    )
+
+    all_metadata = _collection.get(include=["metadatas"])["metadatas"]
+    total_documents = len(
+        {
+            str(metadata["source"])
+            for metadata in all_metadata
+            if metadata is not None
+        }
+    )
+
+    return (
+        document_id,
+        len(chunks),
+        _collection.count(),
+        total_documents,
+        replaced_existing,
+    )
