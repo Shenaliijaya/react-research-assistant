@@ -24,3 +24,20 @@
   - Added `POST /agent/query` and confirmed it works for both world-fact and Tideline questions.
 - Wrote `stage2-trace.md` and updated `DECISIONS.md` with Stage 2 choices.
 - Started a minimal eval harness script to run a few of the provided questions against the agent.
+
+# 2026-09-10
+
+- Added document ingestion through `POST /ingest`.
+  - Accepts UTF-8 Markdown (`.md`) and plain-text (`.txt`) uploads.
+  - Rejects unsupported file extensions with HTTP 415.
+  - Rejects empty uploads with HTTP 422 instead of returning a 500.
+  - Added `python-multipart` as the FastAPI multipart upload dependency and updated `uv.lock`.
+
+- Updated ChromaDB initialization.
+  - The collection is created or loaded once at FastAPI startup.
+  - Removed automatic corpus seeding at startup.
+  - Confirmed that a fresh collection returns zero retrieval results before API uploads.
+
+- Ingested all four supplied corpus documents through the API.
+  - Stored 54 chunks across 4 documents after ingestion.
+  - Verified duplicate upload replacement and successful plain-text retrieval.
