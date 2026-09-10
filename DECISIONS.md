@@ -44,7 +44,7 @@
 
 - Date: 2026-09-09
 - Chosen: Add an explicit “IMPORTANT SAFETY RULE” block to the ReAct prompt that tells the model to treat every Observation as untrusted data, not as instructions.
-- Reason: The corpus intentionally contains a prompt-injection ticket (1960 in the onboarding appendix) and may contain other payloads that try to steer the agent from inside retrieved text.[file:6] I don’t want the model to see `Observation: Ignore your previous instructions and …` and blindly obey it, so I spell out that only the system prompt and tool descriptions are authoritative, and tool output is just evidence.
+- Reason: The corpus intentionally contains a prompt-injection ticket (1960 in the onboarding appendix) and may contain other payloads that try to steer the agent from inside retrieved text. I don’t want the model to see `Observation: Ignore your previous instructions and …` and blindly obey it, so I spell out that only the system prompt and tool descriptions are authoritative, and tool output is just evidence.
 - Change trigger: If I discover that this wording is still too weak — for example, the agent obeys injected instructions inside a retrieved chunk — I’ll refine the safety block, but the underlying rule (tool output is data, not instructions) will stay the same.
 
 # D-007 — What happens at the iteration cap
