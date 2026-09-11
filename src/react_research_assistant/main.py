@@ -9,6 +9,8 @@ from react_research_assistant.api.retrieval import router as retrieval_router
 from react_research_assistant.api.tools import router as tools_router
 from react_research_assistant.api.agent import router as agent_router
 from react_research_assistant.api.ingest import router as ingest_router
+from react_research_assistant.api.health import router as health_router
+from react_research_assistant.api.info import router as info_router
 from react_research_assistant.services.retrieval import initialize_retrieval
 
 
@@ -56,6 +58,17 @@ def create_app() -> FastAPI:
         ingest_router,
         prefix="/ingest",
         tags=["Ingestion"],
+    )
+
+    app.include_router(
+        health_router,
+        tags=["Health"],
+    )
+
+    app.include_router(
+        info_router,
+        prefix="/agent",
+        tags=["Agent"],
     )
 
     return app

@@ -281,3 +281,25 @@ def ingest_document(
         total_documents,
         replaced_existing,
     )
+
+def get_collection_stats() -> tuple[int, int]:
+    """Return the live ChromaDB chunk count and unique-source count."""
+
+    if _collection is None:
+        raise RuntimeError("Retrieval collection has not been initialized.")
+
+    chunk_count = _collection.count()
+
+    metadata_items = _collection.get(
+        include=["metadatas"],
+    )["metadatas"]
+
+    document_count = len(
+        {
+            str(metadata["source"])
+            for metadata in metadata_items
+            if metadata is not None and "source" in metadata
+        }
+    )
+
+    return chunk_count, document_count

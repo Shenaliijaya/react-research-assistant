@@ -1,0 +1,384 @@
+[
+  {
+    "id": "health_live_datastore",
+    "method": "GET",
+    "path": "/health",
+    "description": "Health endpoint checks live ChromaDB and reports collection size.",
+    "expected_statuses": [
+      200
+    ],
+    "actual_status": 200,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"status\":\"ok\",\"collection_size\":30,\"checked_at\":\"2026-09-11T09:55:01.801291Z\"}",
+    "error": ""
+  },
+  {
+    "id": "agent_info_live_registry",
+    "method": "GET",
+    "path": "/agent/info",
+    "description": "Agent info endpoint reports live tools, model, and limits.",
+    "expected_statuses": [
+      200
+    ],
+    "actual_status": 200,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"model\":\"gemini-3.5-flash-lite\",\"temperature\":0.0,\"default_max_iterations\":10,\"minimum_max_iterations\":1,\"maximum_max_iterations\":25,\"timeout_seconds\":60,\"tools\":[{\"name\":\"search\",\"description\":\"Use this ONLY for GENERAL WORLD FACTS (population, area, physics constants, GDP, timezones). Input: short natural-language query, e.g. 'population of France'. NEVER use this for Tideline, Halcyon Labs, pricing, retention, or incidents — use retrieve for those.\"},{\"name\":\"retrieve\",\"description\":\"Use this for ANY question about Tideline or Halcyon Labs: pricing, plans, retention, downsampling, onboarding, or incidents. Input: short natural-language query, e.g. 'Team plan retention default'.\"},{\"name\":\"calculate\",\"description\":\"Use this to evaluate a plain arithmetic expression, e.g. '68170000 / 357022'. Supports + - * / // % ** and parentheses only. Input must be ONLY the expression, no words.\"}]}",
+    "error": ""
+  },
+  {
+    "id": "agent_malformed_json",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Malformed JSON body.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"json_invalid\",\"loc\":[\"body\",17],\"msg\":\"JSON decode error\",\"input\":{},\"ctx\":{\"error\":\"Expecting ',' delimiter\"}}]}",
+    "error": ""
+  },
+  {
+    "id": "agent_missing_query",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Missing required query field.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"query\"],\"msg\":\"Field required\",\"input\":{\"return_trace\":true}}]}",
+    "error": ""
+  },
+  {
+    "id": "agent_empty_query",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Empty query.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"string_too_short\",\"loc\":[\"body\",\"query\"],\"msg\":\"String should have at least 1 character\",\"input\":\"\",\"ctx\":{\"min_length\":1}}]}",
+    "error": ""
+  },
+  {
+    "id": "agent_whitespace_query",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Whitespace-only query.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"query\"],\"msg\":\"Value error, Query must not be empty or whitespace only.\",\"input\":\"   \",\"ctx\":{\"error\":{}}}]}",
+    "error": ""
+  },
+  {
+    "id": "agent_50000_character_query",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "50,000-character query must fail validation, not produce a 500.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"string_too_long\",\"loc\":[\"body\",\"query\"],\"msg\":\"String should have at most 1000 characters\",\"input\":\"retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention retention ",
+    "error": ""
+  },
+  {
+    "id": "agent_emoji_query",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Emoji query must not cause a 500.",
+    "expected_statuses": [
+      200
+    ],
+    "actual_status": 200,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"final_answer\":\"Tideline's retention policy includes the following details across its plans and internal architecture (RFC-014):\\n\\n- **Developer Plan (Free):** 7-day retention.\\n- **Team Plan:** \\n  - Historically and in the customer-facing pricing FAQ, it states **30-day retention (default)**.\\n  - However, effective May 1, 2026, the internal RFC-014 specifies that the default advertised retention for new Team projects is **90 days**, aligning with the fine rollup tier lifetime (with existing Team projects being migrated in batches starting May 4, 2026).\\n- **Scale Plan:** 90-day retention.\\n- **Internal Retention Tiers:** Every project stores four fixed tiers:\\n  - **Raw:** 14-day lifetime (native interval)\\n  - **Fine rollup:** 90-day lifetime (1-minute interval)\\n  - **Coarse rollup:** 400-day lifetime (1-hour interval)\\n  - **Archive rollup:** 5-year lifetime (1-day interval)\",\"trace\":[],\"iterations\":1,\"latency_ms\":47238.26330003794,\"stop_reason\":\"final_answer\"}",
+    "error": ""
+  },
+  {
+    "id": "agent_rtl_query",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Right-to-left Unicode query must not cause a 500.",
+    "expected_statuses": [
+      200
+    ],
+    "actual_status": 200,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"final_answer\":\"فترة الاحتفاظ الافتراضية في Tideline تعتمد على خطة الاشتراك؛ فبالنسبة لخطة Team، كانت الفترة الافتراضية 30 يوماً، ولكن اعتباراً من 1 مايو 2026 أصبحت فترة الاحتفاظ الافتراضية للمشاريع الجديدة على خطة Team هي 90 يوماً (بينما تبلغ 7 أيام لخطة Developer و90 يوماً لخطة Scale).\",\"trace\":[],\"iterations\":1,\"latency_ms\":17049.13940001279,\"stop_reason\":\"final_answer\"}",
+    "error": ""
+  },
+  {
+    "id": "agent_iteration_zero",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Iteration limit below minimum.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"greater_than_equal\",\"loc\":[\"body\",\"max_iterations\"],\"msg\":\"Input should be greater than or equal to 1\",\"input\":0,\"ctx\":{\"ge\":1}}]}",
+    "error": ""
+  },
+  {
+    "id": "agent_iteration_999",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Iteration limit above maximum.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"less_than_equal\",\"loc\":[\"body\",\"max_iterations\"],\"msg\":\"Input should be less than or equal to 25\",\"input\":999,\"ctx\":{\"le\":25}}]}",
+    "error": ""
+  },
+  {
+    "id": "agent_iteration_string",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Non-integer iteration limit.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"int_parsing\",\"loc\":[\"body\",\"max_iterations\"],\"msg\":\"Input should be a valid integer, unable to parse string as an integer\",\"input\":\"ten\"}]}",
+    "error": ""
+  },
+  {
+    "id": "agent_null_session",
+    "method": "POST",
+    "path": "/agent/query",
+    "description": "Null session identifier is accepted as no session.",
+    "expected_statuses": [
+      200
+    ],
+    "actual_status": 200,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"final_answer\":\"Tideline's storage overage rate is $0.09 per GB-month.\",\"trace\":[],\"iterations\":1,\"latency_ms\":23372.75320000481,\"stop_reason\":\"final_answer\"}",
+    "error": ""
+  },
+  {
+    "id": "search_malformed_json",
+    "method": "POST",
+    "path": "/tools/search",
+    "description": "Malformed JSON body for search.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"json_invalid\",\"loc\":[\"body\",18],\"msg\":\"JSON decode error\",\"input\":{},\"ctx\":{\"error\":\"Expecting ',' delimiter\"}}]}",
+    "error": ""
+  },
+  {
+    "id": "search_missing_query",
+    "method": "POST",
+    "path": "/tools/search",
+    "description": "Missing query field for search.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"query\"],\"msg\":\"Field required\",\"input\":{}}]}",
+    "error": ""
+  },
+  {
+    "id": "search_whitespace_query",
+    "method": "POST",
+    "path": "/tools/search",
+    "description": "Whitespace-only search query.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"query\"],\"msg\":\"Value error, Query cannot be empty or whitespace only.\",\"input\":\"   \",\"ctx\":{\"error\":{}}}]}",
+    "error": ""
+  },
+  {
+    "id": "retrieve_malformed_json",
+    "method": "POST",
+    "path": "/tools/retrieve",
+    "description": "Malformed JSON body for retrieve.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"json_invalid\",\"loc\":[\"body\",21],\"msg\":\"JSON decode error\",\"input\":{},\"ctx\":{\"error\":\"Expecting ',' delimiter\"}}]}",
+    "error": ""
+  },
+  {
+    "id": "retrieve_missing_query",
+    "method": "POST",
+    "path": "/tools/retrieve",
+    "description": "Missing query field for retrieve.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"query\"],\"msg\":\"Field required\",\"input\":{}}]}",
+    "error": ""
+  },
+  {
+    "id": "retrieve_whitespace_query",
+    "method": "POST",
+    "path": "/tools/retrieve",
+    "description": "Whitespace-only retrieve query.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\",\"query\"],\"msg\":\"Value error, Query cannot be empty or whitespace only.\",\"input\":\"   \",\"ctx\":{\"error\":{}}}]}",
+    "error": ""
+  },
+  {
+    "id": "retrieve_result_count_zero",
+    "method": "POST",
+    "path": "/tools/retrieve",
+    "description": "Retrieve result_count below minimum.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"greater_than_equal\",\"loc\":[\"body\",\"result_count\"],\"msg\":\"Input should be greater than or equal to 1\",\"input\":0,\"ctx\":{\"ge\":1}}]}",
+    "error": ""
+  },
+  {
+    "id": "retrieve_result_count_string",
+    "method": "POST",
+    "path": "/tools/retrieve",
+    "description": "Non-integer retrieve result_count.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"int_parsing\",\"loc\":[\"body\",\"result_count\"],\"msg\":\"Input should be a valid integer, unable to parse string as an integer\",\"input\":\"three\"}]}",
+    "error": ""
+  },
+  {
+    "id": "calculate_malformed_json",
+    "method": "POST",
+    "path": "/tools/calculate",
+    "description": "Malformed JSON body for calculate.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"json_invalid\",\"loc\":[\"body\",22],\"msg\":\"JSON decode error\",\"input\":{},\"ctx\":{\"error\":\"Expecting ',' delimiter\"}}]}",
+    "error": ""
+  },
+  {
+    "id": "calculate_missing_expression",
+    "method": "POST",
+    "path": "/tools/calculate",
+    "description": "Missing calculator expression.",
+    "expected_statuses": [
+      422
+    ],
+    "actual_status": 422,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"expression\"],\"msg\":\"Field required\",\"input\":{}}]}",
+    "error": ""
+  },
+  {
+    "id": "calculate_divide_by_zero",
+    "method": "POST",
+    "path": "/tools/calculate",
+    "description": "Division by zero returns clean client error.",
+    "expected_statuses": [
+      400,
+      422
+    ],
+    "actual_status": 400,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":\"Division by zero is not allowed.\"}",
+    "error": ""
+  },
+  {
+    "id": "calculate_huge_exponent",
+    "method": "POST",
+    "path": "/tools/calculate",
+    "description": "Huge exponent must fail cleanly without hanging.",
+    "expected_statuses": [
+      400,
+      422
+    ],
+    "actual_status": 400,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":\"This arithmetic operation is not allowed.\"}",
+    "error": ""
+  },
+  {
+    "id": "calculate_code_injection",
+    "method": "POST",
+    "path": "/tools/calculate",
+    "description": "Python code injection must be rejected.",
+    "expected_statuses": [
+      400,
+      422
+    ],
+    "actual_status": 400,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":\"Only basic arithmetic is allowed.\"}",
+    "error": ""
+  },
+  {
+    "id": "calculate_string_literal",
+    "method": "POST",
+    "path": "/tools/calculate",
+    "description": "String expression must be rejected.",
+    "expected_statuses": [
+      400,
+      422
+    ],
+    "actual_status": 400,
+    "passed": true,
+    "no_server_error": true,
+    "response_body": "{\"detail\":\"Only numeric values are allowed.\"}",
+    "error": ""
+  }
+]
