@@ -1,0 +1,109 @@
+[
+  {
+    "method": "ReAct agent",
+    "question_id": "A1",
+    "prompt": "What is Tideline's storage overage rate, and is storage measured in GB or GiB?",
+    "passed": true,
+    "latency_ms": 3346.505499968771,
+    "llm_calls": 2,
+    "answer": "Tideline's storage overage rate is $0.09 per GB-month, and storage is measured in decimal GB ($10^9$ bytes), not GiB.",
+    "tools_called": [
+      "retrieve"
+    ],
+    "retrieved_sources": [
+      "01-tideline-pricing-faq.md",
+      "02-rfc-014-retention-and-downsampling.md"
+    ],
+    "error": ""
+  },
+  {
+    "method": "ReAct agent",
+    "question_id": "B1",
+    "prompt": "What is the default retention window for a new Team project?",
+    "passed": false,
+    "latency_ms": 2997.5223999936134,
+    "llm_calls": 2,
+    "answer": "Effective 2026-05-01, the default advertised retention for new Team projects is 90 days.",
+    "tools_called": [
+      "retrieve"
+    ],
+    "retrieved_sources": [
+      "02-rfc-014-retention-and-downsampling.md",
+      "04-postmortem-inc-2291.md"
+    ],
+    "error": ""
+  },
+  {
+    "method": "ReAct agent",
+    "question_id": "C1",
+    "prompt": "Two organisations affected by INC-2291 still had the deleted data in their own pipelines and offered to re-send it. Why couldn't they?",
+    "passed": true,
+    "latency_ms": 8734.920800023247,
+    "llm_calls": 5,
+    "answer": "They could not re-send the data because of the hard backfill window constraint, which restricts writes to a maximum of 48 hours in the past. Writes with a timestamp older than 48 hours are automatically rejected with an HTTP 409 Conflict (`backfill_window_exceeded`), and there is no operator override or support-initiated bypass available.",
+    "tools_called": [
+      "retrieve",
+      "retrieve",
+      "retrieve",
+      "retrieve"
+    ],
+    "retrieved_sources": [
+      "02-rfc-014-retention-and-downsampling.md",
+      "04-postmortem-inc-2291.md",
+      "03-engineering-onboarding-guide.md"
+    ],
+    "error": ""
+  },
+  {
+    "method": "Single-shot RAG",
+    "question_id": "A1",
+    "prompt": "What is Tideline's storage overage rate, and is storage measured in GB or GiB?",
+    "passed": true,
+    "latency_ms": 2153.392200008966,
+    "llm_calls": 1,
+    "answer": "Based on the provided documents, Tideline's storage overage rate is **$0.09 per GB-month** (which was reduced from $0.11 to $0.09 per GB-month in version 4.2). \n\nStorage is measured in **decimal GB (10⁹ bytes)**, not GiB.",
+    "tools_called": [
+      "retrieve"
+    ],
+    "retrieved_sources": [
+      "01-tideline-pricing-faq.md",
+      "02-rfc-014-retention-and-downsampling.md"
+    ],
+    "error": ""
+  },
+  {
+    "method": "Single-shot RAG",
+    "question_id": "B1",
+    "prompt": "What is the default retention window for a new Team project?",
+    "passed": true,
+    "latency_ms": 2339.138399984222,
+    "llm_calls": 1,
+    "answer": "Based on the provided documents, the default advertised retention window for a new Team project depends on when it was created:\n\n* **Prior to 2026-05-01:** New Team projects were created with a **30-day** advertised retention window (Source: `02-rfc-014-retention-and-downsampling.md`, `01-tideline-pricing-faq.md`). \n* **Effective 2026-05-01:** The default advertised retention for new Team projects is **90 days** (Source: `02-rfc-014-retention-and-downsampling.md`). *(Note: The customer-facing pricing FAQ still states 30 days as of its last review date on 2026-02-14, but the RFC is authoritative for what the system does).*",
+    "tools_called": [
+      "retrieve"
+    ],
+    "retrieved_sources": [
+      "02-rfc-014-retention-and-downsampling.md",
+      "01-tideline-pricing-faq.md",
+      "04-postmortem-inc-2291.md"
+    ],
+    "error": ""
+  },
+  {
+    "method": "Single-shot RAG",
+    "question_id": "C1",
+    "prompt": "Two organisations affected by INC-2291 still had the deleted data in their own pipelines and offered to re-send it. Why couldn't they?",
+    "passed": false,
+    "latency_ms": 2171.768100000918,
+    "llm_calls": 1,
+    "answer": "Based on the provided documents, the deleted data could not be re-sent because tombstones are deliberately not reversible through any customer-facing or support-facing tool. This design choice was made because a reversible delete path was rejected during review as a data-governance risk under customer DPAs (Data Processing Addendums).",
+    "tools_called": [
+      "retrieve"
+    ],
+    "retrieved_sources": [
+      "04-postmortem-inc-2291.md",
+      "02-rfc-014-retention-and-downsampling.md"
+    ],
+    "error": ""
+  }
+]
