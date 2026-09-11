@@ -9,8 +9,8 @@ import chromadb
 CORPUS_PATH = Path("corpus")
 CHROMA_PATH = Path("chroma_db")
 COLLECTION_NAME = "research_corpus"
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 100
+CHUNK_SIZE = 1500
+CHUNK_OVERLAP = 150
 DEFAULT_RESULT_COUNT = 3
 
 _collection = None
