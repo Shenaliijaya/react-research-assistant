@@ -97,3 +97,56 @@ Tested 200/25, 500/75, and 1500/150 on the same 4 docs, rebuilding the collectio
 Tradeoff obviously is bigger chunks = more irrelevant text riding along and more context spent per retrieval call. For a corpus this small I'd rather have complete answers than save a few tokens.
 
 Would reconsider this if the corpus got a lot bigger or if latency/token budget got tight — probably go smaller chunks + bump up result count or add MMR instead.
+
+---
+
+# Stage 4 Notes and Decisions
+
+## Evaluation approach
+
+I ran the evaluation through the actual HTTP API using `POST /agent/query`, rather than importing the agent executor directly. This meant that the runner also tested request validation, routing, response models, agent execution, and
+trace output.
+
+The runner records expected tools and called tools. I treated a correct final answer using the wrong tool path as a failure. For example, a Tideline question should use `retrieve`, not `search`.
+
+I initially used strict required-string checks. The first run showed that this can create false failures when the answer is correct but phrased differently.
+For example, A1 correctly said that storage is measured in decimal GB rather than GiB, but my first text check did not accept the wording. I adjusted the harness checks but kept the saved first-run results as baseline evidence.
+
+## ReAct versus single-shot RAG
+
+I compared A1, B1, and C1 using the normal ReAct agent and a simpler single-shot RAG version. Single-shot RAG does one retrieval, puts the chunks into one prompt, and calls the model once.
+
+| Metric | ReAct agent | Single-shot RAG |
+|---|---:|---:|
+| Correct | 2/3 | 2/3 |
+| Median latency | 3700.1 ms | 2382.8 ms |
+| LLM calls per question | 2 | 1 |
+
+For A1, the ReAct loop was unnecessary because the answer only needed one retrieval. B1 also worked with single-shot RAG because the returned chunks already contained both retention values.
+
+C1 failed for both methods. Both retrieved material from the RFC and postmortem, but both focused on tombstones instead of the more important 48-hour backfill limit and the fact that there was no override. This looked like a synthesis problem, not only a retrieval problem.
+
+## Robustness checks
+
+I added `/health` and `/agent/info`.
+
+`/health` checks the live Chroma collection and returns the collection size. I did not want a health endpoint that always returns OK without checkinganything.
+
+`/agent/info` reads the available tools from `build_tools()` so the endpoint does not show a different tool list from the actual agent.
+
+I ran a fuzz script against the endpoints. It tested malformed JSON, missing fields, empty and whitespace-only values, a 50,000-character query, emoji, right-to-left text, invalid iteration values, null session IDs, invalid retrieval counts, and unsafe calculator expressions.
+The corrected fuzz run passed 27/27 tests with no HTTP 500 errors.
+
+## Injection handling
+
+The corpus contains an injection attempt inside Ticket 1960. I added a prompt instruction that text returned inside an Observation is untrusted data, not a new instruction.
+
+F1 passed because the agent did not reveal its system prompt. F2 passed because the agent described Ticket 1960 as an injection attempt instead of following the text in the retrieved document.
+
+This is better than blocking only the word `TIDEBREAK`, because a different injection could use different wording. However, this is still prompt-based protection, not a complete security boundary.
+
+## Current weakness
+
+D1 was the clearest repeated weakness. The agent sometimes made repeated retrieval calls and parser-error steps, then hit the iteration limit without finishing the annual Team-plan calculation.
+
+I did not hide this by hardcoding the answer or removing the question. If I had more time, I would make one small prompt change telling the agent to use `calculate` after it has collected the necessary numbers, then rerun the full evaluation to check whether that improved D1 without making other questions worse.
