@@ -1,0 +1,173 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f4f7fb;
+  color: #1c2434;
+  font-family:
+    Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 48px 20px;
+}
+
+.agent-card {
+  width: min(820px, 100%);
+  margin: 0 auto;
+  padding: 36px;
+  border: 1px solid #dce3ef;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(31, 53, 84, 0.1);
+}
+
+.eyebrow {
+  margin: 0;
+  color: #536bff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 10px 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+}
+
+h3 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+}
+
+.intro {
+  max-width: 680px;
+  margin-bottom: 28px;
+  color: #566176;
+  line-height: 1.6;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid #bbc8db;
+  border-radius: 10px;
+  color: #1c2434;
+  background: #ffffff;
+  line-height: 1.5;
+}
+
+textarea:focus {
+  outline: 3px solid rgba(83, 107, 255, 0.2);
+  border-color: #536bff;
+}
+
+button {
+  margin-top: 14px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 10px;
+  color: #ffffff;
+  background: #4058e5;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #3046cc;
+}
+
+button:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.message,
+.trace-section {
+  margin-top: 28px;
+  padding: 22px;
+  border-radius: 12px;
+}
+
+.answer-message {
+  border: 1px solid #cce8d7;
+  background: #effaf3;
+}
+
+.error-message {
+  border: 1px solid #f2c4c4;
+  background: #fff2f2;
+  color: #8a2222;
+}
+
+.answer-message > p {
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  color: #4e5a6e;
+  font-size: 0.9rem;
+}
+
+.metadata span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.trace-section {
+  border: 1px solid #dce3ef;
+  background: #f8faff;
+}
+
+.trace-step {
+  margin-top: 14px;
+  padding: 16px;
+  border-left: 4px solid #536bff;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.trace-step p {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .app-shell {
+    padding: 20px 12px;
+  }
+
+  .agent-card {
+    padding: 24px 18px;
+  }
+}
