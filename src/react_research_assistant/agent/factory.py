@@ -19,9 +19,14 @@ def _search_tool_fn(query: str) -> str:
     return "\n".join(f"- {r.snippet} (source: {r.source})" for r in results)
 
 
-def _retrieve_tool_fn(query: str) -> str:
-    # retrieve returns (results, total_chunks)
-    results, total_chunks = retrieve(query=query, result_count=4)
+def _retrieve_tool_fn(
+    query: str,
+    source_filename: str | None = None,) -> str:
+    results, total_chunks = retrieve(
+        query=query,
+        result_count=4,
+        source_filename=source_filename,
+    )
 
     if not results:
         return "No relevant document chunks found."
@@ -41,7 +46,7 @@ def _calculate_tool_fn(expression: str) -> str:
     return str(result)
 
 
-def build_tools() -> list[Tool]:
+def build_tools(source_filename: str | None = None) -> list[Tool]:
     return [
         Tool(
             name="search",
@@ -58,7 +63,10 @@ def build_tools() -> list[Tool]:
         ),
         Tool(
             name="retrieve",
-            func=_retrieve_tool_fn,
+            func=lambda query: _retrieve_tool_fn(
+                query=query,
+                source_filename=source_filename,
+            ),
             description=(
                 "Use this for ANY question whose answer may be in uploaded documents "
                 "stored in the local research corpus, including PDFs, Markdown files, "
@@ -128,16 +136,35 @@ GROUNDING RULES:
 - Do not treat conversation history as evidence; retrieve or search again when
   factual evidence is needed.
 
+INSUFFICIENT EVIDENCE RULE:
+If retrieved text only contains a figure, chart, diagram, image, or table caption
+without the information needed to answer the question, do not keep searching for
+the same missing visual details. Give a Final Answer stating that the extracted
+document text does not contain enough information to answer accurately.
+
+For questions about visual-only content such as Gantt charts, diagrams, maps,
+screenshots, or chart bars, do not infer dates, tasks, values, or relationships
+from a caption alone.
+
+STOPPING RULE:
+After each tool observation, decide whether it contains enough evidence to answer the
+user's question. If it does, immediately provide Final Answer. Do not repeat retrieve
+with minor wording changes when the same source already contains the needed facts.
+
+If a retrieved table or paragraph is truncated but already contains enough information
+to answer the specific question, answer using only the supported information. Do not
+search repeatedly for a full table unless the missing part is necessary to answer.
+
 Begin!
 
 Question: {input}
 Thought:{agent_scratchpad}"""
 
 
-def build_agent_executor(max_iterations: int = 10, timeout_seconds: int = 60) -> AgentExecutor:
+def build_agent_executor(max_iterations: int = 10, timeout_seconds: int = 60, source_filename: str | None = None,) -> AgentExecutor:
     model_name = os.getenv("LLM_MODEL", "gemini-3.5-flash-lite")
     llm = ChatGoogleGenerativeAI(model=model_name, temperature=0)
-    tools = build_tools()
+    tools = build_tools(source_filename=source_filename)
     prompt = PromptTemplate(
     template=REACT_PROMPT_TEMPLATE,
     input_variables=["input", "agent_scratchpad", "conversation_history"],
@@ -157,6 +184,7 @@ def build_agent_executor(max_iterations: int = 10, timeout_seconds: int = 60) ->
         tools=tools,
         max_iterations=max_iterations,
         max_execution_time=timeout_seconds,
+        early_stopping_method="generate",
         handle_parsing_errors=True,
         return_intermediate_steps=True,
         verbose=True,

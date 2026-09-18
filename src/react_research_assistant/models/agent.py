@@ -26,6 +26,14 @@ class AgentRequest(BaseModel):
         description="Optional session identifier to group related queries.",
         examples=["session-abc123"],
     )
+    source_filename: Optional[str] = Field(
+        default=None,
+        description=(
+            "Optional uploaded document filename to restrict retrieval to. "
+            "When omitted, retrieval searches the full collection."
+        ),
+        examples=["FYP_PPRS.pdf"],
+    )
     max_iterations: int = Field(
         default=10,
         ge=1,
@@ -46,6 +54,19 @@ class AgentRequest(BaseModel):
         if not v:
             raise ValueError("Query must not be empty or whitespace only.")
         return v
+
+    @field_validator("source_filename")
+    @classmethod
+    def validate_source_filename(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+
+        value = value.strip()
+
+        if not value:
+            raise ValueError("Source filename cannot be empty or whitespace only.")
+
+        return value
 
 
 class ThoughtStep(BaseModel):

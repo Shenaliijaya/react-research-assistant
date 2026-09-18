@@ -33,6 +33,7 @@ def run_agent(request: AgentRequest) -> AgentResponse:
     executor = build_agent_executor(
         max_iterations=request.max_iterations,
         timeout_seconds=60,
+        source_filename=request.source_filename,
     )
 
     try:
