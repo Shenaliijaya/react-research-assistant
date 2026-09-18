@@ -5,42 +5,41 @@ from react_research_assistant.services.retrieval import ingest_document
 
 router = APIRouter()
 
+SUPPORTED_UPLOAD_SUFFIXES = (".md", ".txt", ".pdf")
+
 
 @router.post(
     "",
     response_model=IngestResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Ingest a Markdown document",
+    summary="Ingest a Markdown, text, or PDF document",
     description=(
-        "Uploads a UTF-8 Markdown file, splits it into overlapping chunks, "
-        "and stores those chunks in the local ChromaDB collection. "
+        "Uploads a UTF-8 Markdown/text file or a text-based PDF, extracts text, "
+        "splits it into overlapping chunks, and stores those chunks in the local "
+        "ChromaDB collection. PDF chunks retain their source page number. "
         "Uploading the same filename again replaces its earlier chunks."
     ),
 )
 async def ingest_file(
     file: UploadFile = File(
         ...,
-        description="A non-empty UTF-8 Markdown (.md) or plain-text (.txt) document.",
+        description=(
+            "A non-empty UTF-8 Markdown (.md), text (.txt), or text-based PDF (.pdf) document. "
+            "Scanned PDFs without embedded text are not supported yet."
+        ),
     ),
 ) -> IngestResponse:
-    """Validate, read, and ingest one uploaded Markdown document."""
+    """Validate, read, and ingest one uploaded Markdown, text, or PDF document."""
 
     filename = file.filename or ""
 
-    if not filename.lower().endswith((".md", ".txt")):
+    if not filename.lower().endswith(SUPPORTED_UPLOAD_SUFFIXES):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Only Markdown (.md) and plain-text (.txt) files are supported.",
+            detail="Only Markdown (.md), plain-text (.txt), and PDF (.pdf) files are supported.",
         )
 
-    try:
-        content = await file.read()
-        text = content.decode("utf-8")
-    except UnicodeDecodeError as error:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="The uploaded file must be valid UTF-8 text.",
-        ) from error
+    content = await file.read()
 
     try:
         (
@@ -51,7 +50,7 @@ async def ingest_file(
             replaced_existing,
         ) = ingest_document(
             filename=filename,
-            text=text,
+            content=content,
         )
     except ValueError as error:
         raise HTTPException(

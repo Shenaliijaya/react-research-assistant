@@ -38,6 +38,7 @@ def retrieve_chunks(request: RetrieveRequest) -> RetrieveResponse:
             chunk_index=chunk.chunk_index,
             text=chunk.text,
             distance=chunk.distance,
+            page_number=chunk.page_number,
         )
         for chunk in chunks
     ]

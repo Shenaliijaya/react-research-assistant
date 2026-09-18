@@ -47,19 +47,26 @@ def build_tools() -> list[Tool]:
             name="search",
             func=_search_tool_fn,
             description=(
-                "Use this ONLY for GENERAL WORLD FACTS (population, area, physics "
-                "constants, GDP, timezones). Input: short natural-language query, "
-                "e.g. 'population of France'. NEVER use this for Tideline, Halcyon "
-                "Labs, pricing, retention, or incidents — use retrieve for those."
+                "Use this ONLY for general world facts contained in the small built-in "
+                "mock fact table, such as population, country area, physics constants, "
+                "GDP, or timezones. Input: a short natural-language query, e.g. "
+                "'population of France'. Do NOT use this for uploaded documents or PDF "
+                "content. If the question is about any uploaded document, report, policy, "
+                "literature review, Tideline, Halcyon Labs, healthcare, or AI research, "
+                "use retrieve instead."
             ),
         ),
         Tool(
             name="retrieve",
             func=_retrieve_tool_fn,
             description=(
-                "Use this for ANY question about Tideline or Halcyon Labs: pricing, "
-                "plans, retention, downsampling, onboarding, or incidents. Input: "
-                "short natural-language query, e.g. 'Team plan retention default'."
+                "Use this for ANY question whose answer may be in uploaded documents "
+                "stored in the local research corpus, including PDFs, Markdown files, "
+                "technical reports, policies, literature reviews, Tideline, Halcyon Labs, "
+                "pricing, retention, onboarding, incidents, healthcare, AI research, or "
+                "any topic not explicitly available in the world-facts search table. "
+                "Input: a short natural-language query, e.g. 'MenstLLaMA BERTScore' or "
+                "'Team plan retention default'."
             ),
         ),
         Tool(
@@ -100,6 +107,14 @@ Conversation history from this same session:
 Use the conversation history only to resolve references in the current question,
 such as "that document", "the testing section", or "what about it". The history
 is context, not a replacement for retrieved evidence.
+
+TOOL SELECTION RULE:
+- Use search ONLY for general world facts in the built-in mock fact table.
+- Use retrieve for questions about any uploaded or ingested document, including
+  PDF files, Markdown files, reports, policies, literature reviews, Tideline,
+  Halcyon Labs, healthcare, or AI research.
+- When in doubt whether information is in an uploaded document, use retrieve
+  before answering.
 
 GROUNDING RULES:
 - Answer factual questions only using information returned by the search or

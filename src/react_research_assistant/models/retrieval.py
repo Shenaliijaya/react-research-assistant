@@ -84,6 +84,11 @@ class RetrievedChunkResponse(BaseModel):
         description="ChromaDB similarity distance; lower is more similar.",
         examples=[1.05],
     )
+    page_number: int | None = Field(
+        default=None,
+        description="Original PDF page number when the chunk came from a PDF; null for text files.",
+        examples=[3],
+    )
 
 
 class RetrieveResponse(BaseModel):
