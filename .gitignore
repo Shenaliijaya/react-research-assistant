@@ -1,12 +1,43 @@
 .venv/
+
 # Python cache
 __pycache__/
 *.pyc
 
+
 .env
 .env.*
 !.env.example
+
+
 chroma_db/
+
+# Generated table artifacts from PDF ingestion
+data/table_artifacts/
+
 
 check.txt
 empty.md
+
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+
+.coverage
+htmlcov/
+
+# Build / package output
+build/
+dist/
+*.egg-info/
+
+# Editor / operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Ignore all PDF documents by default
+*.pdf
